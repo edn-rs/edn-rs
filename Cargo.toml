@@ -18,6 +18,7 @@ unsafe_code = "deny"
 [lints.clippy]
 pedantic = "warn"
 nursery = "warn"
+inline_always = "allow"
 
 [features]
 default = ["sets", "std"]

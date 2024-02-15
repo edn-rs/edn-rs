@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use alloc::{fmt, format};
 #[cfg(feature = "sets")]
 use core::cmp::{Ord, PartialOrd};
-use core::convert::{Infallible, TryFrom};
+use core::convert::TryFrom;
 use core::num;
 
 use crate::deserialize::parse::{self};
@@ -16,6 +16,7 @@ use utils::index::Index;
 #[cfg(feature = "sets")]
 use ordered_float::OrderedFloat;
 
+pub mod error;
 #[doc(hidden)]
 pub mod utils;
 
@@ -692,7 +693,7 @@ impl Edn {
 }
 
 impl core::str::FromStr for Edn {
-    type Err = Error;
+    type Err = error::Error;
 
     /// Parses a `&str` that contains an Edn into `Result<Edn, EdnError>`
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -710,63 +711,6 @@ where
 #[allow(clippy::cast_precision_loss)]
 pub(crate) fn rational_to_double((n, d): (i64, u64)) -> f64 {
     (n as f64) / (d as f64)
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum Error {
-    ParseEdn(String),
-    Deserialize(String),
-    Iter(String),
-    TryFromInt(num::TryFromIntError),
-    #[doc(hidden)]
-    Infallable(), // Makes the compiler happy for converting u64 to u64 and i64 to i64
-}
-
-impl From<String> for Error {
-    fn from(s: String) -> Self {
-        Self::ParseEdn(s)
-    }
-}
-
-impl From<num::ParseIntError> for Error {
-    fn from(s: num::ParseIntError) -> Self {
-        Self::ParseEdn(s.to_string())
-    }
-}
-
-impl From<num::ParseFloatError> for Error {
-    fn from(s: num::ParseFloatError) -> Self {
-        Self::ParseEdn(s.to_string())
-    }
-}
-
-impl From<core::str::ParseBoolError> for Error {
-    fn from(s: core::str::ParseBoolError) -> Self {
-        Self::ParseEdn(s.to_string())
-    }
-}
-
-impl From<num::TryFromIntError> for Error {
-    fn from(e: num::TryFromIntError) -> Self {
-        Self::TryFromInt(e)
-    }
-}
-
-impl From<Infallible> for Error {
-    fn from(_: Infallible) -> Self {
-        Self::Infallable()
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::ParseEdn(s) | Self::Deserialize(s) | Self::Iter(s) => write!(f, "{}", &s),
-            Self::TryFromInt(e) => write!(f, "{e}"),
-            Self::Infallable() => panic!("Infallable conversion"),
-        }
-    }
 }
 
 #[cfg(test)]

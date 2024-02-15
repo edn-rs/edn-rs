@@ -19,6 +19,11 @@ mod test {
     #[test]
     fn parse_empty() {
         assert_eq!(Edn::from_str("").unwrap(), Edn::Empty);
+        assert_eq!(
+            Edn::from_str("[]").unwrap(),
+            Edn::Vector(Vector::new(vec![]))
+        );
+        assert_eq!(Edn::from_str("()").unwrap(), Edn::List(List::new(vec![])));
     }
 
     #[test]
@@ -33,12 +38,7 @@ mod test {
     #[cfg(not(feature = "sets"))]
     // Special case of running into a set without the feature enabled
     fn parse_set_without_set_feature() {
-        assert_eq!(
-            Edn::from_str("#{true, \\c, 3,four, }"),
-            Err(Error::ParseEdn(
-                "Could not parse set due to feature not being enabled".to_string()
-            ))
-        )
+        assert!(Edn::from_str("#{true, \\c, 3,four, }").is_err())
     }
 
     #[test]
@@ -804,10 +804,7 @@ mod test {
 
     #[test]
     fn parse_numberic_symbol_with_doube_e() {
-        assert_eq!(
-            Edn::from_str("5011227E71367421E12").unwrap(),
-            Edn::Symbol("5011227E71367421E12".to_string())
-        );
+        assert!(Edn::from_str("5011227E71367421E12").is_err());
     }
 
     #[test]
@@ -990,5 +987,12 @@ mod test {
                 Edn::Char('_'),
             ]))
         );
+    }
+
+    #[test]
+    fn invalid_edn() {
+        assert!(Edn::from_str("{ :foo 42 :foo 43 }").is_err());
+        assert!(Edn::from_str("{ :[0x42] 42 }").is_err());
+        assert!(Edn::from_str("\\cats").is_err());
     }
 }

@@ -8,6 +8,7 @@ pub mod deserialize;
 pub mod deserialize_sets;
 pub mod emit;
 pub mod emit_json;
+pub mod error_messages;
 pub mod parse;
 pub mod parse_sets;
 pub mod ser;

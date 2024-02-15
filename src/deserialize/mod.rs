@@ -1,7 +1,6 @@
 use alloc::collections::BTreeMap;
 #[cfg(feature = "sets")]
 use alloc::collections::BTreeSet;
-use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::any;
@@ -12,7 +11,8 @@ use std::collections::HashMap;
 #[cfg(all(feature = "sets", feature = "std"))]
 use std::collections::HashSet;
 
-use crate::edn::{Edn, Error};
+use crate::edn::Edn;
+use crate::EdnError as Error;
 
 pub mod parse;
 
@@ -23,7 +23,7 @@ use ordered_float::OrderedFloat;
 ///
 /// # Errors
 ///
-/// Error will be like `EdnError::Deserialize("couldn't convert <value> into <type>")`
+/// Error implements Debug. See docs for more information.
 ///
 /// ```
 /// use crate::edn_rs::{Edn, EdnError, Deserialize};
@@ -72,15 +72,15 @@ pub trait Deserialize: Sized {
     fn deserialize(edn: &Edn) -> Result<Self, Error>;
 }
 
-fn build_deserialize_error(edn: &Edn, type_: &str) -> Error {
-    Error::Deserialize(format!("couldn't convert `{edn}` into `{type_}`"))
+const fn build_deserialize_error(type_: &'static str) -> Error {
+    Error::deserialize(type_)
 }
 
 impl Deserialize for () {
     fn deserialize(edn: &Edn) -> Result<Self, Error> {
         match edn {
             Edn::Nil => Ok(()),
-            _ => Err(build_deserialize_error(edn, "unit")),
+            _ => Err(build_deserialize_error("unit")),
         }
     }
 }
@@ -89,7 +89,7 @@ impl Deserialize for () {
 impl Deserialize for OrderedFloat<f64> {
     fn deserialize(edn: &Edn) -> Result<Self, Error> {
         edn.to_float()
-            .ok_or_else(|| build_deserialize_error(edn, "edn_rs::Double"))
+            .ok_or_else(|| build_deserialize_error("edn_rs::Double"))
             .map(Into::into)
     }
 }
@@ -97,7 +97,7 @@ impl Deserialize for OrderedFloat<f64> {
 impl Deserialize for f64 {
     fn deserialize(edn: &Edn) -> Result<Self, Error> {
         edn.to_float()
-            .ok_or_else(|| build_deserialize_error(edn, "edn_rs::Double"))
+            .ok_or_else(|| build_deserialize_error("edn_rs::Double"))
             .map(Into::into)
     }
 }
@@ -109,7 +109,7 @@ macro_rules! impl_deserialize_int {
                 fn deserialize(edn: &Edn) -> Result<Self, Error> {
                     let int = edn
                         .to_int()
-                        .ok_or_else(|| build_deserialize_error(edn, "int"))?;
+                        .ok_or_else(|| build_deserialize_error("int"))?;
                     Ok(Self::try_from(int)?)
                 }
             }
@@ -126,7 +126,7 @@ macro_rules! impl_deserialize_uint {
                 fn deserialize(edn: &Edn) -> Result<Self, Error> {
                     let uint = edn
                         .to_uint()
-                        .ok_or_else(|| build_deserialize_error(edn, "uint"))?;
+                        .ok_or_else(|| build_deserialize_error("uint"))?;
                     Ok(Self::try_from(uint)?)
                 }
             }
@@ -138,8 +138,7 @@ impl_deserialize_uint!(u8, u16, u32, u64, usize);
 
 impl Deserialize for bool {
     fn deserialize(edn: &Edn) -> Result<Self, Error> {
-        edn.to_bool()
-            .ok_or_else(|| build_deserialize_error(edn, "bool"))
+        edn.to_bool().ok_or_else(|| build_deserialize_error("bool"))
     }
 }
 
@@ -160,8 +159,7 @@ impl Deserialize for String {
 
 impl Deserialize for char {
     fn deserialize(edn: &Edn) -> Result<Self, Error> {
-        edn.to_char()
-            .ok_or_else(|| build_deserialize_error(edn, "char"))
+        edn.to_char().ok_or_else(|| build_deserialize_error("char"))
     }
 }
 
@@ -173,21 +171,21 @@ where
         match edn {
             Edn::Vector(_) => Ok(edn
                 .iter_some()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
+                .ok_or_else(Error::iter)?
                 .map(|e| Deserialize::deserialize(e))
                 .collect::<Result<Self, Error>>()?),
             Edn::List(_) => Ok(edn
                 .iter_some()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
+                .ok_or_else(Error::iter)?
                 .map(|e| Deserialize::deserialize(e))
                 .collect::<Result<Self, Error>>()?),
             #[cfg(feature = "sets")]
             Edn::Set(_) => Ok(edn
                 .iter_some()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
+                .ok_or_else(Error::iter)?
                 .map(|e| Deserialize::deserialize(e))
                 .collect::<Result<Self, Error>>()?),
-            _ => Err(build_deserialize_error(edn, any::type_name::<Self>())),
+            _ => Err(build_deserialize_error(any::type_name::<Self>())),
         }
     }
 }
@@ -202,20 +200,15 @@ where
         match edn {
             Edn::Map(_) => edn
                 .map_iter()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
+                .ok_or_else(Error::iter)?
                 .map(|(key, e)| {
                     Ok((
                         key.to_string(),
-                        Deserialize::deserialize(e).map_err(|_| {
-                            Error::Deserialize(format!(
-                                "Cannot safely deserialize {:?} to {}",
-                                edn, "HashMap"
-                            ))
-                        })?,
+                        Deserialize::deserialize(e).map_err(|_| Error::deserialize("HashMap"))?,
                     ))
                 })
                 .collect::<Result<Self, Error>>(),
-            _ => Err(build_deserialize_error(edn, any::type_name::<Self>())),
+            _ => Err(build_deserialize_error(any::type_name::<Self>())),
         }
     }
 }
@@ -228,20 +221,15 @@ where
         match edn {
             Edn::Map(_) => edn
                 .map_iter()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
+                .ok_or_else(Error::iter)?
                 .map(|(key, e)| {
                     Ok((
                         key.to_string(),
-                        Deserialize::deserialize(e).map_err(|_| {
-                            Error::Deserialize(format!(
-                                "Cannot safely deserialize {:?} to {}",
-                                edn, "BTreeMap"
-                            ))
-                        })?,
+                        Deserialize::deserialize(e).map_err(|_| Error::deserialize("BTreeMap"))?,
                     ))
                 })
                 .collect::<Result<Self, Error>>(),
-            _ => Err(build_deserialize_error(edn, any::type_name::<Self>())),
+            _ => Err(build_deserialize_error(any::type_name::<Self>())),
         }
     }
 }
@@ -256,17 +244,10 @@ where
         match edn {
             Edn::Set(_) => edn
                 .set_iter()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
-                .map(|e| {
-                    Deserialize::deserialize(e).map_err(|_| {
-                        Error::Deserialize(format!(
-                            "Cannot safely deserialize {:?} to {}",
-                            edn, "HashSet"
-                        ))
-                    })
-                })
+                .ok_or_else(Error::iter)?
+                .map(|e| Deserialize::deserialize(e).map_err(|_| Error::deserialize("HashSet")))
                 .collect::<Result<Self, Error>>(),
-            _ => Err(build_deserialize_error(edn, any::type_name::<Self>())),
+            _ => Err(build_deserialize_error(any::type_name::<Self>())),
         }
     }
 }
@@ -280,17 +261,10 @@ where
         match edn {
             Edn::Set(_) => edn
                 .set_iter()
-                .ok_or_else(|| Error::Iter(format!("Could not create iter from {edn:?}")))?
-                .map(|e| {
-                    Deserialize::deserialize(e).map_err(|_| {
-                        Error::Deserialize(format!(
-                            "Cannot safely deserialize {:?} to {}",
-                            edn, "BTreeSet"
-                        ))
-                    })
-                })
+                .ok_or_else(Error::iter)?
+                .map(|e| Deserialize::deserialize(e).map_err(|_| Error::deserialize("BTreeSet")))
                 .collect::<Result<Self, Error>>(),
-            _ => Err(build_deserialize_error(edn, any::type_name::<Self>())),
+            _ => Err(build_deserialize_error(any::type_name::<Self>())),
         }
     }
 }
