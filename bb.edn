@@ -1,7 +1,11 @@
 {:tasks
- {clean                        {:doc      "Removes target folder"
-                                :requires ([babashka.fs :as fs])
-                                :task     (fs/delete-tree "target")}
+ {:init                        (do (def code-cov-env
+                                     {"CARGO_INCREMENTAL" "0"
+                                      "RUSTFLAGS" "-Cinstrument-coverage -Copt-level=0 -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off"
+                                      "LLVM_PROFILE_FILE" "target/coverage/cargo-test-%p-%m.profraw"}))
+  :requires                    ([babashka.fs :as fs])
+  clean                        {:doc  "Removes target folder"
+                                :task (fs/delete-tree "target")}
   test_lib_features            (shell "cargo test --all-features --no-fail-fast")
   test_lib_no_default_features (shell "cargo test --features std --no-default-features --no-fail-fast")
   example_fast                 (shell "cargo test --examples --no-fail-fast")
@@ -23,5 +27,15 @@
                                 :task (shell "cargo clippy --features json --no-default-features -- -W future-incompatible -W rust_2018_idioms -W clippy::all -W clippy::pedantic -W clippy::nursery --deny warnings")}
   clippy                       {:doc     "Runs all variations of cargo clippy"
                                 :depends [cargo-clippy-all-features cargo-clippy-no-sets-json cargo-clippy-no-defaults]}
+  cov-all-features             {:doc  "Coverage, all features"
+                                :task (shell {:extra-env code-cov-env} "cargo test --all-features")}
+  cov-std-only                 {:doc  "Coverage, std only"
+                                :task (shell {:extra-env code-cov-env} "cargo test --no-default-features --features std")}
+  clean-cov                    {:doc  "Cleans all .profraw files and generated html"
+                                :task (fs/delete-tree "target/coverage")}
+  grcov                        {:doc  "Runs grcov to generate human readable html"
+                                :task (shell "grcov target/coverage --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing -o target/coverage/html")}
+  coverage                     {:doc     "Generates coverage in human friendly html in target/coverage/"
+                                :depends [clean-cov cov-all-features cov-std-only grcov]}
   test                         {:doc     "Runs all tests and checks"
                                 :depends [cargo-test cargo-fmt clippy]}}}
