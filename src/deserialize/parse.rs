@@ -16,7 +16,6 @@ use crate::edn::{Edn, List, Map, Vector};
 
 const DELIMITERS: [char; 8] = [',', ']', '}', ')', ';', '(', '[', '{'];
 
-#[derive(Debug)]
 struct Walker<'w> {
     slice: &'w str,
     ptr: usize,
@@ -517,20 +516,20 @@ fn parse_number(lit: &str) -> Result<Edn, Code> {
         }
     };
 
-    match number {
-        n if (n.contains('E') || n.contains('e')) && n.parse::<f64>().is_ok() => {
-            Ok(Edn::Double(n.parse::<f64>()?.into()))
-        }
-        n if u64::from_str_radix(&n, radix.into()).is_ok() => {
-            Ok(Edn::UInt(u64::from_str_radix(&n, radix.into())?))
-        }
-        n if i64::from_str_radix(&n, radix.into()).is_ok() => {
-            Ok(Edn::Int(i64::from_str_radix(&n, radix.into())?))
-        }
-        n if n.parse::<f64>().is_ok() => Ok(Edn::Double(n.parse::<f64>()?.into())),
-        n if num_den_from_slice(&n).is_some() => Ok(Edn::Rational(num_den_from_slice(n).unwrap())),
-        _ => Err(Code::InvalidNumber),
+    if let Ok(n) = u64::from_str_radix(&number, radix.into()) {
+        return Ok(Edn::UInt(n));
     }
+    if let Ok(n) = i64::from_str_radix(&number, radix.into()) {
+        return Ok(Edn::Int(n));
+    }
+    if let Ok(n) = number.parse::<f64>() {
+        return Ok(Edn::Double(n.into()));
+    }
+    if let Some((n, d)) = num_den_from_slice(&number) {
+        return Ok(Edn::Rational((n, d)));
+    }
+
+    Err(Code::InvalidNumber)
 }
 
 #[inline]

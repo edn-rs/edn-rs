@@ -21,7 +21,6 @@ pub enum Code {
     InvalidKeyword,
     InvalidNumber,
     InvalidRadix(Option<u8>),
-    ParseNumber(ParseNumber),
     UnexpectedEOF,
     UnmatchedDelimiter(char),
 
@@ -31,34 +30,16 @@ pub enum Code {
     /// Deserialize errors
     Convert(&'static str),
 
-    /// Navigation errors
-    Iter,
-
     /// Type conversion errors
     TryFromInt(num::TryFromIntError),
     #[doc(hidden)]
     Infallable(), // Makes the compiler happy for converting u64 to u64 and i64 to i64
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum ParseNumber {
-    ParseIntError(num::ParseIntError),
-    ParseFloatError(num::ParseFloatError),
-}
-
 impl Error {
     pub(crate) const fn deserialize(conv_type: &'static str) -> Self {
         Self {
             code: Code::Convert(conv_type),
-            line: None,
-            column: None,
-            ptr: None,
-        }
-    }
-    pub(crate) const fn iter() -> Self {
-        Self {
-            code: Code::Iter,
             line: None,
             column: None,
             ptr: None,
@@ -73,18 +54,6 @@ impl Debug for Error {
             "EdnError {{ code: {:?}, line: {:?}, column: {:?}, ptr: {:?} }}",
             self.code, self.line, self.column, self.ptr
         )
-    }
-}
-
-impl From<num::ParseIntError> for Code {
-    fn from(e: num::ParseIntError) -> Self {
-        Self::ParseNumber(ParseNumber::ParseIntError(e))
-    }
-}
-
-impl From<num::ParseFloatError> for Code {
-    fn from(e: num::ParseFloatError) -> Self {
-        Self::ParseNumber(ParseNumber::ParseFloatError(e))
     }
 }
 

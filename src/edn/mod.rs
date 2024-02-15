@@ -90,7 +90,7 @@ impl From<f64> for Double {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "sets", derive(Eq, PartialOrd, Ord))]
-pub struct Vector(Vec<Edn>);
+pub struct Vector(pub(crate) Vec<Edn>);
 impl Vector {
     #[must_use]
     pub const fn new(v: Vec<Edn>) -> Self {
@@ -110,7 +110,7 @@ impl Vector {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "sets", derive(Eq, PartialOrd, Ord))]
-pub struct List(Vec<Edn>);
+pub struct List(pub(crate) Vec<Edn>);
 impl List {
     #[must_use]
     pub fn new(v: Vec<Edn>) -> Self {
@@ -130,7 +130,7 @@ impl List {
 
 #[cfg(feature = "sets")]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct Set(BTreeSet<Edn>);
+pub struct Set(pub(crate) BTreeSet<Edn>);
 
 #[cfg(feature = "sets")]
 impl Set {
@@ -152,7 +152,7 @@ impl Set {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "sets", derive(Eq, PartialOrd, Ord))]
-pub struct Map(BTreeMap<String, Edn>);
+pub struct Map(pub(crate) BTreeMap<String, Edn>);
 impl Map {
     #[must_use]
     pub fn new(m: BTreeMap<String, Edn>) -> Self {
