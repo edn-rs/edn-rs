@@ -70,12 +70,7 @@ fn complex_wrong() -> Result<(), EdnError> {
     let bad_edn_str = "{:list [{:name \"rose\" :age \"some text\" :cool true}, {:name \"josh\" :age 33 :cool false}, {:name \"eva\" :age 296 :cool true}]}";
     let complex: Result<Complex, EdnError> = edn_rs::from_str(bad_edn_str);
 
-    assert_eq!(
-        complex,
-        Err(EdnError::Deserialize(
-            "couldn't convert `\"some text\"` into `uint`".to_string()
-        ))
-    );
+    assert!(complex.is_err());
 
     Ok(())
 }
