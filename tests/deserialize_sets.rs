@@ -9,10 +9,8 @@ mod test {
     use edn::{List, Vector};
     use edn_rs::{edn, from_edn, from_str, hset, map, set, Edn, EdnError, Map, Set};
 
-    fn err_as_string(s: &str) -> String {
-        let err = Edn::from_str(s).err().unwrap();
-        format!("{err:?}")
-    }
+    mod common;
+    use crate::test::common::err_as_string;
 
     #[test]
     fn parse_set_with_commas() {

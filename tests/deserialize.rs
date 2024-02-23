@@ -7,10 +7,8 @@ mod test {
 
     use edn_rs::{edn, from_edn, from_str, hmap, map, Edn, List, Map, Vector};
 
-    fn err_as_string(s: &str) -> String {
-        let err = Edn::from_str(s).err().unwrap();
-        format!("{err:?}")
-    }
+    mod common;
+    use crate::test::common::err_as_string;
 
     #[test]
     fn unit() {
