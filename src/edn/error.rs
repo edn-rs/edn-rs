@@ -14,6 +14,10 @@ pub struct Error {
 #[derive(Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Code {
+    /// Custom errors for external crates (eg. `edn-derive`). std only.
+    #[cfg(feature = "std")]
+    CustomError(std::string::String),
+
     /// Parse errors
     HashMapDuplicateKey,
     InvalidChar,
