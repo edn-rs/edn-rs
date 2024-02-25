@@ -94,4 +94,21 @@ world!"#
         let small = edn_rs::from_edn::<u8>(&Edn::UInt(9876123));
         assert_eq!(format!("{small:?}"), "Err(EdnError { code: TryFromInt(TryFromIntError(())), line: None, column: None, ptr: None })");
     }
+
+    #[test]
+    #[cfg(feature = "sets")]
+    fn duplicate_in_set() {
+        assert_eq!(
+            err_as_string("#{1 42 42 3}"),
+            "EdnError { code: SetDuplicateKey, line: Some(1), column: Some(10), ptr: Some(9) }"
+        );
+    }
+
+    #[test]
+    fn duplicate_in_map() {
+        assert_eq!(
+            err_as_string("{:foo 42 :bar 43 :foo \"cat\"}"),
+            "EdnError { code: HashMapDuplicateKey, line: Some(1), column: Some(28), ptr: Some(27) }"
+        );
+    }
 }

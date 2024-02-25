@@ -20,6 +20,7 @@ pub enum Code {
 
     /// Parse errors
     HashMapDuplicateKey,
+    SetDuplicateKey,
     InvalidChar,
     InvalidEscape,
     InvalidKeyword,

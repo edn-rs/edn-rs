@@ -262,9 +262,14 @@ fn parse_set(walker: &mut Walker<'_>) -> Result<Edn, Error> {
             }
             Some(_) => {
                 let next = parse_internal(walker)?;
-                if next != Edn::Empty {
-                    set.insert(next);
-                }
+                if next != Edn::Empty && !set.insert(next) {
+                    return Err(Error {
+                        code: Code::SetDuplicateKey,
+                        line: Some(walker.line),
+                        column: Some(walker.column),
+                        ptr: Some(walker.ptr),
+                    });
+                };
             }
             _ => {
                 return Err(Error {
