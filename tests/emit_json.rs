@@ -87,14 +87,13 @@ mod tests {
     #[test]
     fn regression_str_to_uint_test() {
         use edn_derive::Deserialize;
-        use edn_rs::EdnError;
         #[derive(Deserialize, Debug, PartialEq)]
         struct A {
             amount: u64,
         }
 
-        let a: Result<A, EdnError> = edn_rs::from_str("{ :amount \"123\" }");
-        assert_eq!(a, Ok(A { amount: 123 }));
+        let a: A = edn_rs::from_str("{ :amount \"123\" }").unwrap();
+        assert_eq!(a, A { amount: 123 });
     }
 
     #[test]

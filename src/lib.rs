@@ -100,7 +100,7 @@ pub fn json_to_edn<'a>(json: impl AsRef<str>) -> Cow<'a, str> {
 }
 
 pub use deserialize::{from_edn, from_str, Deserialize};
-pub use edn::Error as EdnError;
+pub use edn::error::Error as EdnError;
 #[cfg(feature = "sets")]
 pub use edn::Set;
 pub use edn::{Edn, List, Map, Vector};

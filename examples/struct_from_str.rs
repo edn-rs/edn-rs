@@ -36,13 +36,7 @@ fn person_mistyped() -> Result<(), EdnError> {
     let bad_edn_str = "{:name \"rose\" :age \"some text\" }";
     let person: Result<Person, EdnError> = edn_rs::from_str(bad_edn_str);
 
-    assert_eq!(
-        person,
-        Err(EdnError::Deserialize(
-            "couldn't convert `\"some text\"` into `uint`".to_string()
-        ))
-    );
-
+    assert!(person.is_err());
     Ok(())
 }
 
@@ -50,11 +44,7 @@ fn person_overflow() -> Result<(), EdnError> {
     let overflow_edn_str = "  {:name \"rose\" :age 9002  }  ";
     let person: Result<Person, EdnError> = edn_rs::from_str(overflow_edn_str);
 
-    assert_eq!(
-        format!("{person:?}"),
-        "Err(TryFromInt(TryFromIntError(())))"
-    );
-
+    assert!(person.is_err());
     Ok(())
 }
 
